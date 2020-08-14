@@ -1,23 +1,24 @@
 package Devices;
 
+import Utils.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import static Bridge.Bridge.encodeLightId;
 
 public class Device {
-    private static int count=0;
-    public int id;
     public final String name;
+    private static int count=0;
+    private final int id;
     private final Callback callback;
-    public Mode mode;
+    private Mode mode;
     private double x=1.,y=1.;
     private int temperature = 500;
     private int hue, sat;
     private int value, lastvalue;
     @NotNull
     private RGB color;
-    public final Type type;
-    public int changed = 0;
+    private final Type type;
+    private int changed = 0;
 
     public Device(String name, Callback callback, Type type){
         this.name = name;
@@ -28,7 +29,7 @@ public class Device {
         color = new RGB(0,0,0);
     }
 
-    private double rgbConvert(double value){
+    private synchronized double rgbConvert(double value){
         if(value<0.0031308){
             return 12.92*value;
         }
@@ -37,7 +38,7 @@ public class Device {
         }
     }
 
-    public int setColor(){
+    private synchronized void setColor(){
         switch(mode){
             case Hue:
                 double h = (double)(this.hue) / 65525.0;
@@ -123,37 +124,34 @@ public class Device {
                 color.g = color.g * 255;
                 color.b = color.b * 255;
                 break;
-            default:
-                return 0;
         }
-        return (int)(color.r) << 16 | (int)(color.g) << 8 | (int)(color.b);
     }
 
-    public void setColorTemperature(int temperature){
+    public synchronized void setColorTemperature(int temperature){
         this.temperature=temperature;
         this.mode = Mode.Temperature;
         this.setColor();
     }
 
-    public void setColorXY(double x, double y){
+    public synchronized void setColorXY(double x, double y){
         this.x = x;
         this.y = y;
         this.mode = Mode.XY;
         this.setColor();
     }
 
-    public void setColorHue(int hue, int sat){
+    public synchronized void setColorHue(int hue, int sat){
         this.hue = hue;
         this.sat = sat;
         this.mode = Mode.Hue;
         this.setColor();
     }
 
-    public void callback(){
+    public synchronized void callback(){
         callback.execute(this);
     }
 
-    public String toJSON(){
+    public synchronized String toJSON(){
         String json;
 
         boolean status = (this.value>0);
@@ -183,22 +181,22 @@ public class Device {
         return json;
     }
 
-    public int getLastValue() {
+    public synchronized int getLastValue() {
         if(this.lastvalue==0){
             return 255;
         }
         return this.lastvalue;
     }
 
-    public @NotNull RGB getColor(){
+    public synchronized @NotNull RGB getColor(){
         return color;
     }
 
-    public void setPropertyChanged(int value) {
+    public synchronized void setPropertyChanged(int value) {
         this.changed = value;
     }
 
-    public void setValue(int value) {
+    public synchronized void setValue(int value) {
         if(this.value != 0)
             this.lastvalue = this.value;
         if(value != 0)
@@ -206,8 +204,40 @@ public class Device {
         this.value = value;
     }
 
+    public synchronized int getChanged(){
+        return changed;
+    }
+
+    public synchronized int getValue(){
+        return value;
+    }
+
+    public synchronized int getLastvalue(){
+        return lastvalue;
+    }
+
+    public synchronized Pair<Double, Double> getXY(){
+        return new Pair<>(x, y);
+    }
+
+    public synchronized int getId(){
+        return id;
+    }
+
+    public synchronized Pair<Integer, Integer> getHueSat(){
+        return new Pair<>(hue, sat);
+    }
+
+    public synchronized int getTemperature(){
+        return temperature;
+    }
+
+    public synchronized Mode getMode(){
+        return mode;
+    }
+
     @Override
-    public String toString(){
+    public synchronized String toString(){
         return String.format("Name: %s\n\tId: %d\n\tMode: %s\n\tValue: %d\n\tLastValue: %d\n\tRGB: %s\n\tType: %s\n", name, id, mode, value, lastvalue, color, type);
     }
 }
