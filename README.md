@@ -1,7 +1,7 @@
 # AlexaHubBridge
 Philips Hue emulator receiving command from Amazon Echo devices.
 
-**This is not suitable for daily use, it need further tests.**
+**This is not suitable for daily use, it needs further tests.**
 
 ## Introduction
 
@@ -9,11 +9,14 @@ This little library help you to interface with Amazon Echo devices emulating an 
 
 ## What is working
 
-I tested this with an Echo Dot, (sometimes) it can detect the virtual devices and you can control them from your smartphone calling custom function.
+I tested this with an Echo Dot, ~(sometimes)~ it can detect the virtual devices and you can control them from your smartphone or your Echo device.
 
 ## What's not working
 
-At the moment you can't control the virtual devices using voice and virtual devices order/name is not respected.
+~At the moment you can't control the virtual devices using voice and virtual devices order/name is not respected.~
+
+## Quick start
+See the [wiki](https://github.com/nico9889/AlexaHueBridge/wiki/Quickstart)
 
 ## How does it works
 
