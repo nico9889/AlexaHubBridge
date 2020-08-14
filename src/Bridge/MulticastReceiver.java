@@ -5,15 +5,12 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
-import java.util.ArrayList;
 
 import static Utils.Utils.macFormat;
 
-public class MulticastReceiver extends Thread{
+class MulticastReceiver extends Thread{
     private final MulticastSocket socket;
-    private final ArrayList<InetAddress> addresses = new ArrayList<>();
     final InetAddress address;
-    private final InetAddress group_address = InetAddress.getByName("239.255.255.250");
     final int port = 1900;
     private final String mac;
     private boolean running = true;
@@ -22,12 +19,16 @@ public class MulticastReceiver extends Thread{
         this.socket = new MulticastSocket(port);
         this.address = address;
         this.mac = macFormat(nif.getHardwareAddress());
-        socket.joinGroup(group_address);
+        socket.joinGroup(InetAddress.getByName("239.255.255.250"));
         socket.setNetworkInterface(nif);
     }
 
+    public void terminate(){
+        running = false;
+    }
+
     public void run(){
-        System.out.println("Multicast Listening:");
+        // System.out.println("Multicast Listening");
         byte[] b = new byte[1024];
         DatagramPacket dgram = new DatagramPacket(b, b.length);
         try {
@@ -35,7 +36,7 @@ public class MulticastReceiver extends Thread{
                 socket.receive(dgram);
                 String data  = new String(b, 0, dgram.getLength());
                 if((data.contains("upnp:rootdevice") || data.contains("asic:1") || data.contains("ssdp:all"))){
-                    System.out.println("SSDP: " + dgram.getAddress());
+                    // System.out.println("SSDP: " + dgram.getAddress());
                     String response = String.format("HTTP/1.1 200 OK\r\n" +
                             "EXT:\r\n" +
                             "CACHE-CONTROL: max-age=100\r\n" + // SSDP_INTERVAL

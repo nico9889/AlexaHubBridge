@@ -3,8 +3,6 @@ package Bridge;
 import Devices.Callback;
 import Devices.Device;
 import Devices.Type;
-import Handlers.Api;
-import Handlers.Description;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
@@ -56,6 +54,10 @@ public class Bridge {
         }
         InetAddress address = InetAddress.getByName(addresses.get(input.nextInt()).getHostAddress());
         return new Bridge(address, nif, port);
+    }
+
+    public void stopSSDPHandler(){
+        mri.terminate();
     }
 
     // FIXME: bad design

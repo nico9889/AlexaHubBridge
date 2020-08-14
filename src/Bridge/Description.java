@@ -1,4 +1,4 @@
-package Handlers;
+package Bridge;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -10,7 +10,7 @@ import java.net.NetworkInterface;
 
 import static Utils.Utils.macFormat;
 
-public class Description implements HttpHandler {
+class Description implements HttpHandler {
     private final InetAddress address;
     private final NetworkInterface nif;
 

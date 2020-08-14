@@ -1,6 +1,6 @@
 package Devices;
 
-class RGB{
+public class RGB{
     double r,g,b;
 
     RGB(double r, double g, double b){

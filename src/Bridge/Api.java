@@ -1,4 +1,4 @@
-package Handlers;
+package Bridge;
 
 import Devices.Device;
 import com.sun.net.httpserver.Headers;
@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import static Bridge.Bridge.decodeLightId;
 import static Bridge.Bridge.encodeLightId;
 
-public class Api implements HttpHandler {
+class Api implements HttpHandler {
     private final ArrayList<Device> devices;
 
     public Api(ArrayList<Device> devices){
@@ -24,20 +24,20 @@ public class Api implements HttpHandler {
 
     @Override
     public void handle(HttpExchange httpExchange){
-        System.out.println(httpExchange.getRequestURI());
+        // System.out.println(httpExchange.getRequestURI());
         String request;
         JSONObject json = null;
         try {
             request = new String(httpExchange.getRequestBody().readAllBytes());
             json = new JSONObject(request);
-            System.out.println("Request body: " + json);
+            // System.out.println("Request body: " + json);
         }catch(Exception e) {
-            System.out.println("Request body: missing body");
+            // System.out.println("Request body: missing body");
         }
         try {
             handleAlexa(httpExchange, json);
         }catch(IOException io){
-            System.out.println("Error when handling request");
+            // System.out.println("Error when handling request");
         }
 
     }
@@ -47,11 +47,11 @@ public class Api implements HttpHandler {
         headers.set("Content-Type", String.format("application/json; charset=%s", "UTF-8"));
         URI uri = httpExchange.getRequestURI();
         String path = uri.getRawPath();
-        String body = "";
+        String body;
         OutputStream response = httpExchange.getResponseBody();
         if(json!=null) {
             if (json.has("devicetype")) {
-                System.out.println("HTTP: Device Type");
+                // System.out.println("HTTP: Device Type");
                 try {
                     body = "[{\"success\":{\"username\":\"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]";
                     httpExchange.sendResponseHeaders(200, body.getBytes().length);
@@ -63,7 +63,7 @@ public class Api implements HttpHandler {
                 }
             }
             if (path.indexOf("state") > 0) {
-                System.out.println("HTTP: State");
+                // System.out.println("HTTP: State");
                 body = "[{\"success\":{\"/lights/1/state/\": true}}]";
                 int devId;
                 if (path.length() > path.indexOf("lights") + 7)
@@ -90,7 +90,7 @@ public class Api implements HttpHandler {
                     } else {
                         devices.get(devId).setValue(bri + 1);
                     }
-                    System.out.println("Bri: " + bri);
+                    // System.out.println("Bri: " + bri);
                     devices.get(devId).setPropertyChanged(3);
                 }
                 if (json.has("xy")){
@@ -125,7 +125,7 @@ public class Api implements HttpHandler {
 
         int pos = path.indexOf("lights");
         if (pos > 0){
-            System.out.println("HTTP: Lights");
+            // System.out.println("HTTP: Lights");
             int devId = (path.length()>pos+7) ? Integer.parseInt(path.substring(pos + 7)):0;
             StringBuilder jsonTemp = new StringBuilder("{");
 
@@ -161,6 +161,6 @@ public class Api implements HttpHandler {
                 }
             }
         }
-        System.out.println(body);
+        // System.out.println(body);
     }
 }
