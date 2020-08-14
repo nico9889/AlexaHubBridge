@@ -15,6 +15,9 @@ I tested this with an Echo Dot, ~(sometimes)~ it can detect the virtual devices 
 
 ~At the moment you can't control the virtual devices using voice and virtual devices order/name is not respected.~
 
+## Quick start
+See the [wiki](https://github.com/nico9889/AlexaHueBridge/wiki/Quickstart)
+
 ## How does it works
 
 Echo devices uses Simple Service Discovery Protocol to find Philips Hue Hub. This library looks for those packet and then send to the Echo devices the web server information needed for pairing and control the virtual devices.
