@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
@@ -16,49 +17,52 @@ import static Bridge.Bridge.decodeLightId;
 import static Bridge.Bridge.encodeLightId;
 
 public class Api implements HttpHandler {
-    public final ArrayList<Device> devices;
+    private final ArrayList<Device> devices;
 
     public Api(ArrayList<Device> devices){
         this.devices=devices;
     }
 
     @Override
-    public void handle(HttpExchange httpExchange) throws IOException{
-        System.out.println("Handling /api");
+    public void handle(HttpExchange httpExchange){
         System.out.println(httpExchange.getRequestURI());
-        String request = null;
+        String request;
         JSONObject json = null;
         try {
             request = new String(httpExchange.getRequestBody().readAllBytes());
             json = new JSONObject(request);
-        }catch(Exception e){
-            System.out.println("Json non presente");
+        }catch(Exception e) {
+            System.out.println("Missing body");
         }
-        System.out.println("Request: " + request);
-        System.out.println("JSON: " + json);
-        handleAlexa(httpExchange, json);
+        try {
+            handleAlexa(httpExchange, json);
+        }catch(IOException io){
+            System.out.println("Error when handling request");
+        }
+
     }
 
-    public void handleAlexa(HttpExchange httpExchange, JSONObject json) throws IOException{
+    private void handleAlexa(HttpExchange httpExchange, JSONObject json) throws IOException {
         Headers headers = httpExchange.getResponseHeaders();
         headers.set("Content-Type", String.format("application/json; charset=%s", "UTF-8"));
         URI uri = httpExchange.getRequestURI();
         String path = uri.getRawPath();
-        System.out.println("Path:" + path);
+        OutputStream response = httpExchange.getResponseBody();
         if(json!=null) {
             if (json.has("devicetype")) {
+                System.out.println("HTTP: Device Type");
                 try {
                     String body = "[{\"success\":{\"username\":\"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]";
-                    System.out.println(body);
                     httpExchange.sendResponseHeaders(200, body.getBytes().length);
-                    OutputStream response = httpExchange.getResponseBody();
                     response.write(body.getBytes());
                 }catch(Exception e){
                     e.printStackTrace();
+                }finally{
+                    response.close();
                 }
             }
             if (path.indexOf("state") > 0) {
-                System.out.println("State answer");
+                System.out.println("HTTP: State");
                 try{
                     String body = "[{\"success\":true}]";
                     int devId;
@@ -106,21 +110,23 @@ public class Api implements HttpHandler {
                         devices.get(devId).setPropertyChanged(5);
                     }
                     devices.get(devId).callback();
-                    System.out.println("After callback");
-                    httpExchange.sendResponseHeaders(200, body.getBytes().length);
-                    OutputStream response = httpExchange.getResponseBody();
-                    response.write(body.getBytes());
+                    try {
+                        httpExchange.sendResponseHeaders(200, body.getBytes().length);
+                        response.write(body.getBytes());
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }finally {
+                        response.close();
+                    }
                 }catch(Exception e){
                     e.printStackTrace();
                 }
-                System.out.println("Terminato cambio stato");
             }
         }
 
         int pos = path.indexOf("lights");
         if (pos > 0){
-            System.out.println("Hadling lights");
-            OutputStream response = httpExchange.getResponseBody();
+            System.out.println("HTTP: Lights");
             int devId = (path.length()>pos+7) ? Integer.parseInt(path.substring(pos + 7)):0;
             StringBuilder jsonTemp = new StringBuilder("{");
 
@@ -131,18 +137,27 @@ public class Api implements HttpHandler {
                     if (i < devices.size() - 1) jsonTemp.append(",");
                 }
                 jsonTemp.append("}");
-                System.out.println("Light response: " + new JSONObject(jsonTemp));
-                httpExchange.sendResponseHeaders(200, jsonTemp.toString().getBytes().length);
-                response.write(jsonTemp.toString().getBytes());
+                try{
+                    httpExchange.sendResponseHeaders(200, jsonTemp.toString().getBytes().length);
+                    response.write(jsonTemp.toString().getBytes());
+                }catch(Exception e){
+                    e.printStackTrace();
+                }finally {
+                    response.close();
+                }
             }else{
                 devId = decodeLightId(devId)-1;
-                System.out.println(devId);
                 if(devId < devices.size()){
-                    System.out.println("Getting devices" + devId);
                     String body = devices.get(devId).toJSON(devId);
-                    System.out.println("Body luce con ID: " + body);
-                    httpExchange.sendResponseHeaders(200, body.getBytes().length);
-                    response.write(body.getBytes());
+                    try {
+                        httpExchange.sendResponseHeaders(200, body.getBytes().length);
+                        response.write(body.getBytes());
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }
+                    finally{
+                        response.close();
+                    }
                 }
             }
         }

@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact name="test2">
+    <output-path>$PROJECT_DIR$/out/artifacts/test2</output-path>
+    <root id="root">
+      <element id="module-output" name="AlexaHueBridge" />
+      <element id="library" level="project" name="org.json:json:20200518" />
+    </root>
+  </artifact>
+</component>

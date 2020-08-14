@@ -11,8 +11,8 @@ import java.net.NetworkInterface;
 import static Utils.Utils.macFormat;
 
 public class Description implements HttpHandler {
-    public final InetAddress address;
-    public final NetworkInterface nif;
+    private final InetAddress address;
+    private final NetworkInterface nif;
 
     public Description(InetAddress address, NetworkInterface nif){
         this.address = address;
@@ -21,7 +21,6 @@ public class Description implements HttpHandler {
 
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
-        System.out.println("Handling description.xml");
         if(httpExchange.getRequestMethod().equals("GET")) {
             String ip = address.getHostAddress();
             String mac = macFormat(nif.getHardwareAddress());
@@ -46,6 +45,7 @@ public class Description implements HttpHandler {
             httpExchange.sendResponseHeaders(200, description.getBytes().length);
             OutputStream response = httpExchange.getResponseBody();
             response.write(description.getBytes());
+            response.close();
         }
         httpExchange.sendResponseHeaders(501,0);
     }

@@ -9,15 +9,15 @@ import java.util.Scanner;
 import static Utils.Utils.macFormat;
 
 public class MulticastReceiver extends Thread{
-    public final MulticastSocket socket;
-    public final NetworkInterface nif;
-    public final ArrayList<InetAddress> addresses = new ArrayList<>();
-    public final InetAddress address;
-    public final InetAddress group_address = InetAddress.getByName("239.255.255.250");
-    public final int port = 1900;
-    public boolean running = true;
+    private final MulticastSocket socket;
+    final NetworkInterface nif;
+    private final ArrayList<InetAddress> addresses = new ArrayList<>();
+    final InetAddress address;
+    private final InetAddress group_address = InetAddress.getByName("239.255.255.250");
+    final int port = 1900;
+    private boolean running = true;
 
-    public MulticastReceiver() throws IOException {
+    MulticastReceiver() throws IOException {
         Scanner input = new Scanner(System.in);
         Enumeration<NetworkInterface> enumNif = NetworkInterface.getNetworkInterfaces();
         while(enumNif.hasMoreElements()){
@@ -48,8 +48,8 @@ public class MulticastReceiver extends Thread{
                 socket.receive(dgram);
                 String data  = new String(b, 0, dgram.getLength());
                 if((data.contains("upnp:rootdevice") || data.contains("asic:1") || data.contains("ssdp:all"))){
+                    System.out.println("SSDP: " + dgram.getAddress());
                     /*
-                    System.out.println(dgram.getAddress());
                     System.out.println(dgram.getPort());
                     System.out.println(data);
                     System.out.println("Answering multicast");

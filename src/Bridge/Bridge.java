@@ -48,9 +48,8 @@ public class Bridge {
         httpServer.start();
     }
 
-    public Device addDevice(String name, Callback callback, Type type){
+    public void addDevice(String name, Callback callback, Type type){
         Device device = new Device(name, callback, type);
         devices.add(device);
-        return device;
     }
 }
