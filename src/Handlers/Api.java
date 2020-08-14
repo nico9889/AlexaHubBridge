@@ -6,11 +6,11 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import static Bridge.Bridge.decodeLightId;
@@ -31,6 +31,7 @@ public class Api implements HttpHandler {
         try {
             request = new String(httpExchange.getRequestBody().readAllBytes());
             json = new JSONObject(request);
+            System.out.println("Body: " + json);
         }catch(Exception e) {
             System.out.println("Missing body");
         }
@@ -47,12 +48,13 @@ public class Api implements HttpHandler {
         headers.set("Content-Type", String.format("application/json; charset=%s", "UTF-8"));
         URI uri = httpExchange.getRequestURI();
         String path = uri.getRawPath();
+        String body = "";
         OutputStream response = httpExchange.getResponseBody();
         if(json!=null) {
             if (json.has("devicetype")) {
                 System.out.println("HTTP: Device Type");
                 try {
-                    String body = "[{\"success\":{\"username\":\"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]";
+                    body = "[{\"success\":{\"username\":\"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]";
                     httpExchange.sendResponseHeaders(200, body.getBytes().length);
                     response.write(body.getBytes());
                 }catch(Exception e){
@@ -63,63 +65,61 @@ public class Api implements HttpHandler {
             }
             if (path.indexOf("state") > 0) {
                 System.out.println("HTTP: State");
-                try{
-                    String body = "[{\"success\":true}]";
-                    int devId;
-                    if (path.length() > path.indexOf("lights") + 7)
-                        devId = Integer.parseInt(path.substring(path.indexOf("lights") + 7, path.indexOf("lights")+15));
-                    else
-                        devId = 0;
-                    devId = decodeLightId(devId);
-                    devId--;
-                    if (devId >= devices.size() || devId < 0) return;
-                    devices.get(devId).setPropertyChanged(0);
-                    if (json.has("on") && !((boolean) json.get("on"))) { //OFF command
-                        devices.get(devId).setValue(0);
-                        devices.get(devId).setPropertyChanged(2);
-                        devices.get(devId).callback();
-                    }
-                    if (json.has("on") && ((boolean) json.get("on"))) {
-                        devices.get(devId).setValue(devices.get(devId).getLastValue());
-                        devices.get(devId).setPropertyChanged(1);
-                    }
-                    if (json.has("bri")) {
-                        int briL = (int) json.get("bri");
-                        if (briL == 255) {
-                            devices.get(devId).setValue(255);
-                        } else {
-                            devices.get(devId).setValue(briL + 1);
-                        }
-                        devices.get(devId).setPropertyChanged(3);
-                    }
-                    if (json.has("xy")){
-                        double x = 0;
-                        double y = 0;
-                        devices.get(devId).setColorXY(x, y);
-                        devices.get(devId).setPropertyChanged(6);
-                    }
-                    if (json.has("hue")) {
-                        int hue = (int)json.get("hue");
-                        int sat = (int)json.get("sat");
-                        devices.get(devId).setColorHue(hue, sat);
-                        devices.get(devId).setPropertyChanged(4);
-                    }
-                    if (json.has("ct")) {
-                        int ct = (int)json.get("ct");
-                        devices.get(devId).setColorTemperature(ct);
-                        devices.get(devId).setPropertyChanged(5);
-                    }
+                body = "[{\"success\":{\"/lights/1/state/\": true}}]";
+                int devId;
+                if (path.length() > path.indexOf("lights") + 7)
+                    devId = Integer.parseInt(path.substring(path.indexOf("lights") + 7, path.indexOf("lights")+15));
+                else
+                    devId = 0;
+                devId = decodeLightId(devId);
+                devId--;
+                if (devId >= devices.size()) return;
+                devices.get(devId).setPropertyChanged(0);
+                if (json.has("on") && !((boolean) json.get("on"))) {
+                    devices.get(devId).setValue(0);
+                    devices.get(devId).setPropertyChanged(2);
                     devices.get(devId).callback();
-                    try {
-                        httpExchange.sendResponseHeaders(200, body.getBytes().length);
-                        response.write(body.getBytes());
-                    }catch(Exception e){
-                        e.printStackTrace();
-                    }finally {
-                        response.close();
+                }
+                if (json.has("on") && ((boolean) json.get("on"))) {
+                    devices.get(devId).setValue(devices.get(devId).getLastValue());
+                    devices.get(devId).setPropertyChanged(1);
+                }
+                if (json.has("bri")) {
+                    int bri = (int) json.get("bri");
+                    if (bri == 255) {
+                        devices.get(devId).setValue(255);
+                    } else {
+                        devices.get(devId).setValue(bri + 1);
                     }
+                    System.out.println("Bri: " + bri);
+                    devices.get(devId).setPropertyChanged(3);
+                }
+                if (json.has("xy")){
+                    JSONArray xy = json.getJSONArray("xy");
+                    double x = (double)xy.get(0);
+                    double y = (double)xy.get(1);
+                    devices.get(devId).setColorXY(x, y);
+                    devices.get(devId).setPropertyChanged(6);
+                }
+                if (json.has("hue")) {
+                    int hue = (int)json.get("hue");
+                    int sat = (int)json.get("sat");
+                    devices.get(devId).setColorHue(hue, sat);
+                    devices.get(devId).setPropertyChanged(4);
+                }
+                if (json.has("ct")) {
+                    int ct = (int)json.get("ct");
+                    devices.get(devId).setColorTemperature(ct);
+                    devices.get(devId).setPropertyChanged(5);
+                }
+                devices.get(devId).callback();
+                try {
+                    httpExchange.sendResponseHeaders(200, body.getBytes().length);
+                    response.write(body.getBytes());
                 }catch(Exception e){
                     e.printStackTrace();
+                }finally {
+                    response.close();
                 }
             }
         }
@@ -133,7 +133,7 @@ public class Api implements HttpHandler {
             if (devId == 0) {
                 for (int i = 0; i < devices.size(); i++) {
                     jsonTemp.append("\"").append(encodeLightId(i + 1)).append("\":");
-                    jsonTemp.append(devices.get(i).toJSON(i));
+                    jsonTemp.append(devices.get(i).toJSON());
                     if (i < devices.size() - 1) jsonTemp.append(",");
                 }
                 jsonTemp.append("}");
@@ -147,19 +147,21 @@ public class Api implements HttpHandler {
                 }
             }else{
                 devId = decodeLightId(devId)-1;
-                if(devId < devices.size()){
-                    String body = devices.get(devId).toJSON(devId);
-                    try {
-                        httpExchange.sendResponseHeaders(200, body.getBytes().length);
-                        response.write(body.getBytes());
-                    }catch(Exception e){
-                        e.printStackTrace();
-                    }
-                    finally{
-                        response.close();
-                    }
+                if(devId > devices.size())
+                    body = "{}";
+                else
+                    body = devices.get(devId).toJSON();
+                try {
+                    httpExchange.sendResponseHeaders(200, body.getBytes().length);
+                    response.write(body.getBytes());
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+                finally{
+                    response.close();
                 }
             }
         }
+        System.out.println(body);
     }
 }

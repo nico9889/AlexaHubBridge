@@ -1,26 +1,31 @@
 package Devices;
 
+import org.jetbrains.annotations.NotNull;
+
 import static Bridge.Bridge.encodeLightId;
 
 public class Device {
     private static int count=0;
     public int id;
     public final String name;
-    public final Callback callback;
+    private final Callback callback;
     public Mode mode;
-    private double x,y;
-    private int temperature;
+    private double x=1.,y=1.;
+    private int temperature = 500;
     private int hue, sat;
     private int value, lastvalue;
+    @NotNull
     private RGB color;
     public final Type type;
     public int changed = 0;
 
     public Device(String name, Callback callback, Type type){
         this.name = name;
-        this.callback = callback;
         this.type = type;
         this.id = ++count;
+        this.callback = callback;
+        this.mode = Mode.XY;
+        color = new RGB(0,0,0);
     }
 
     private double rgbConvert(double value){
@@ -127,25 +132,28 @@ public class Device {
     public void setColorTemperature(int temperature){
         this.temperature=temperature;
         this.mode = Mode.Temperature;
+        this.setColor();
     }
 
     public void setColorXY(double x, double y){
         this.x = x;
         this.y = y;
         this.mode = Mode.XY;
+        this.setColor();
     }
 
     public void setColorHue(int hue, int sat){
         this.hue = hue;
         this.sat = sat;
         this.mode = Mode.Hue;
+        this.setColor();
     }
 
     public void callback(){
-        callback.execute();
+        callback.execute(this);
     }
 
-    public String toJSON(int i){
+    public String toJSON(){
         String json;
 
         boolean status = (this.value>0);
@@ -175,7 +183,6 @@ public class Device {
         return json;
     }
 
-    // TODO
     public int getLastValue() {
         if(this.lastvalue==0){
             return 255;
@@ -183,7 +190,10 @@ public class Device {
         return this.lastvalue;
     }
 
-    // TODO
+    public @NotNull RGB getColor(){
+        return color;
+    }
+
     public void setPropertyChanged(int value) {
         this.changed = value;
     }
@@ -191,8 +201,13 @@ public class Device {
     public void setValue(int value) {
         if(this.value != 0)
             this.lastvalue = this.value;
-        if(this.value != 0)
-            this.value = value;
+        if(value != 0)
+            this.lastvalue = value;
         this.value = value;
+    }
+
+    @Override
+    public String toString(){
+        return String.format("Name: %s\n\tId: %d\n\tMode: %s\n\tValue: %d\n\tLastValue: %d\n\tRGB: %s\n\tType: %s\n", name, id, mode, value, lastvalue, color, type);
     }
 }

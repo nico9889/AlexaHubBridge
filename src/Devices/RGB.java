@@ -8,4 +8,9 @@ class RGB{
         this.g = g;
         this.b = b;
     }
+
+    @Override
+    public String toString(){
+        return String.format("[R: %f G: %f B: %f]",r,g,b);
+    }
 }

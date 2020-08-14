@@ -4,7 +4,7 @@ public enum Mode{
     Hue{
         @Override
         public String toString() {
-            return "hue";
+            return "hs";
         }
     },
     Temperature{
