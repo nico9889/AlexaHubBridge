@@ -4,14 +4,13 @@ import Devices.Device;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import static Bridge.Bridge.decodeLightId;
 import static Bridge.Bridge.encodeLightId;
@@ -31,9 +30,9 @@ public class Api implements HttpHandler {
         try {
             request = new String(httpExchange.getRequestBody().readAllBytes());
             json = new JSONObject(request);
-            System.out.println("Body: " + json);
+            System.out.println("Request body: " + json);
         }catch(Exception e) {
-            System.out.println("Missing body");
+            System.out.println("Request body: missing body");
         }
         try {
             handleAlexa(httpExchange, json);
