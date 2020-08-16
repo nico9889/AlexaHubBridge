@@ -3,6 +3,7 @@ package Bridge;
 import Devices.Callback;
 import Devices.Device;
 import Devices.Type;
+import Utils.TooManyDevicesException;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
@@ -63,15 +64,14 @@ public class Bridge {
     // FIXME: bad design
     public static int encodeLightId(int id){
         String mac = macFormat(Bridge.mac);
-        int[] sub_mac = new int[6];
-        for(int i = 0; i<mac.length(); i+=2){
-            sub_mac[i/2] = Integer.parseInt(mac.substring(i, i+1), 16);
-        }
-        return (sub_mac[3] << 20) | (sub_mac[4] << 12) | (sub_mac[5] << 4) | (id & 0xF);
+        int fixed0 = Integer.parseInt(mac.substring(8,9),16);
+        int fixed1 = Integer.parseInt(mac.substring(10,11),16);
+        // (MAC fourth couple) | (MAC fifth couple) | (light id) | (id truncated to fill)
+        return (fixed0 << 20) | (fixed1 << 12) | ((id & 0xFF) << 4) | (id & 0xF);
     }
 
     public static int decodeLightId(int id){
-        return (id & 0xF);
+        return id>>4 & (0xFF);
     }
 
     public void start(){
@@ -80,9 +80,13 @@ public class Bridge {
     }
 
 
-    public Device addDevice(String name, Callback callback, Type type){
+    public Device addDevice(String name, Callback callback, Type type) throws Exception{
         Device d = new Device(name, callback, type);
-        devices.add(d);
-        return d;
+        if(d.getCount()<=256) {
+            devices.add(d);
+            return d;
+        }else{
+            throw new TooManyDevicesException("Too many devices! (>256)");
+        }
     }
 }
