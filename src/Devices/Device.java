@@ -23,7 +23,7 @@ public class Device {
     public Device(String name, Callback callback, Type type){
         this.name = name;
         this.type = type;
-        this.id = ++count;
+        this.id = count++;
         this.callback = callback;
         this.mode = Mode.XY;
         color = new RGB(0,0,0);
@@ -222,6 +222,10 @@ public class Device {
 
     public synchronized int getId(){
         return id;
+    }
+
+    public int getCount(){
+        return count;
     }
 
     public synchronized Pair<Integer, Integer> getHueSat(){

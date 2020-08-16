@@ -47,12 +47,13 @@ class Api implements HttpHandler {
         headers.set("Content-Type", String.format("application/json; charset=%s", "UTF-8"));
         URI uri = httpExchange.getRequestURI();
         String path = uri.getRawPath();
-        String body;
+        String body = null;
         OutputStream response = httpExchange.getResponseBody();
         if(json!=null) {
             if (json.has("devicetype")) {
                 // System.out.println("HTTP: Device Type");
                 try {
+                    // return a static username for the API call
                     body = "[{\"success\":{\"username\":\"2WLEDHardQrI3WHYTHoMcXHgEspsM8ZZRpSKtBQr\"}}]";
                     httpExchange.sendResponseHeaders(200, body.getBytes().length);
                     response.write(body.getBytes());
@@ -62,57 +63,68 @@ class Api implements HttpHandler {
                     response.close();
                 }
             }
-            if (path.indexOf("state") > 0) {
+            else if (path.indexOf("state") > 0) {
                 // System.out.println("HTTP: State");
                 body = "[{\"success\":{\"/lights/1/state/\": true}}]";
                 int devId;
+                // We get the ID from the path
                 if (path.length() > path.indexOf("lights") + 7)
                     devId = Integer.parseInt(path.substring(path.indexOf("lights") + 7, path.indexOf("lights")+15));
                 else
-                    devId = 0;
-                devId = decodeLightId(devId);
-                devId--;
+                    return; // Invalid request, we stop here
+                // Decode ID. We use that as ArrayList index (IDs starts from 1, need to shift them)
+                devId = decodeLightId(devId)-1;
+                // Invalid ID. Stop here
                 if (devId >= devices.size()) return;
                 devices.get(devId).setPropertyChanged(0);
+
+                // Turn off check
                 if (json.has("on") && !((boolean) json.get("on"))) {
                     devices.get(devId).setValue(0);
                     devices.get(devId).setPropertyChanged(2);
-                    devices.get(devId).callback();
-                }
-                if (json.has("on") && ((boolean) json.get("on"))) {
-                    devices.get(devId).setValue(devices.get(devId).getLastValue());
-                    devices.get(devId).setPropertyChanged(1);
-                }
-                if (json.has("bri")) {
-                    int bri = (int) json.get("bri");
-                    if (bri == 255) {
-                        devices.get(devId).setValue(255);
-                    } else {
-                        devices.get(devId).setValue(bri + 1);
+                // If the devices has been turned off, we skip to the end, otherwise we check all the other state change
+                }else{
+                    // Turn on check
+                    if (json.has("on") && ((boolean) json.get("on"))) {
+                        devices.get(devId).setValue(devices.get(devId).getLastValue());
+                        devices.get(devId).setPropertyChanged(1);
                     }
-                    // System.out.println("Bri: " + bri);
-                    devices.get(devId).setPropertyChanged(3);
+                    // Brightness check
+                    if (json.has("bri")) {
+                        int bri = (int) json.get("bri");
+                        if (bri == 255) {
+                            devices.get(devId).setValue(255);
+                        } else {
+                            devices.get(devId).setValue(bri + 1);
+                        }
+                        devices.get(devId).setPropertyChanged(3);
+                    }
+                    // XY value check
+                    if (json.has("xy")){
+                        JSONArray xy = json.getJSONArray("xy");
+                        double x = (double)xy.get(0);
+                        double y = (double)xy.get(1);
+                        devices.get(devId).setColorXY(x, y);
+                        devices.get(devId).setPropertyChanged(6);
+                    }
+                    // Hue-saturation check
+                    if (json.has("hue")) {
+                        int hue = (int)json.get("hue");
+                        int sat = (int)json.get("sat");
+                        devices.get(devId).setColorHue(hue, sat);
+                        devices.get(devId).setPropertyChanged(4);
+                    }
+                    // Color temperature check
+                    if (json.has("ct")) {
+                        int ct = (int)json.get("ct");
+                        devices.get(devId).setColorTemperature(ct);
+                        devices.get(devId).setPropertyChanged(5);
+                    }
                 }
-                if (json.has("xy")){
-                    JSONArray xy = json.getJSONArray("xy");
-                    double x = (double)xy.get(0);
-                    double y = (double)xy.get(1);
-                    devices.get(devId).setColorXY(x, y);
-                    devices.get(devId).setPropertyChanged(6);
-                }
-                if (json.has("hue")) {
-                    int hue = (int)json.get("hue");
-                    int sat = (int)json.get("sat");
-                    devices.get(devId).setColorHue(hue, sat);
-                    devices.get(devId).setPropertyChanged(4);
-                }
-                if (json.has("ct")) {
-                    int ct = (int)json.get("ct");
-                    devices.get(devId).setColorTemperature(ct);
-                    devices.get(devId).setPropertyChanged(5);
-                }
+                // User function callback
                 devices.get(devId).callback();
                 try {
+                    // Send "success" in response
                     httpExchange.sendResponseHeaders(200, body.getBytes().length);
                     response.write(body.getBytes());
                 }catch(Exception e){
@@ -126,10 +138,12 @@ class Api implements HttpHandler {
         int pos = path.indexOf("lights");
         if (pos > 0){
             // System.out.println("HTTP: Lights");
+            // If the requests contains a light id, we parse it, otherwise it's zero
             int devId = (path.length()>pos+7) ? Integer.parseInt(path.substring(pos + 7)):0;
-            StringBuilder jsonTemp = new StringBuilder("{");
 
+            // (id==0) Return all the virtual devices in a list
             if (devId == 0) {
+                StringBuilder jsonTemp = new StringBuilder("{");
                 for (int i = 0; i < devices.size(); i++) {
                     jsonTemp.append("\"").append(encodeLightId(i + 1)).append("\":");
                     jsonTemp.append(devices.get(i).toJSON());
@@ -144,6 +158,7 @@ class Api implements HttpHandler {
                 }finally {
                     response.close();
                 }
+            // (id!=0) Return the requested virtual device status
             }else{
                 devId = decodeLightId(devId)-1;
                 if(devId > devices.size())

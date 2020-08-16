@@ -8,6 +8,7 @@ import java.net.NetworkInterface;
 
 import static Utils.Utils.macFormat;
 
+// Receive UDP SSDP packet and respond
 class MulticastReceiver extends Thread{
     private final MulticastSocket socket;
     final InetAddress address;

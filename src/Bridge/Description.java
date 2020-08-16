@@ -21,6 +21,7 @@ class Description implements HttpHandler {
 
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
+        // Send fake descriptionx.xml to the requesting client emulating Philips Hue
         if(httpExchange.getRequestMethod().equals("GET")) {
             String ip = address.getHostAddress();
             String mac = macFormat(nif.getHardwareAddress());
